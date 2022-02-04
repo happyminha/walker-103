@@ -1,0 +1,46 @@
+# 패키지 import
+import psycopg2
+import re
+from datetime import datetime
+import uuid
+
+#db connection
+connection = psycopg2.connect("host=49.50.167.136  dbname=synthea_1000 user=walker103 password=forcebewithyou port=5432")
+
+#사전 추출한 정보 select (CONTINUING 부분 제외)
+cur = connection.cursor()
+cur.execute("select * from walker103.clinical_note_regex")
+rows = cur.fetchall()
+
+# 추출할 테이블 생성
+#cur.execute("create table clinical_note_extract (table_id varchar(128), person_id varchar(128), note text);")
+#connection.commit()
+
+for note in rows :
+    #공통으로 사용할 일자 추출 regex 가져오기
+    date_regex = re.compile("\d{4}\-(0?[1-9]|1[012])\-(0?[0-9]|[12][0-9]|3[01])*")
+    #기록지에서 가장 처음에 나오는것이 생년월일 이므로 바로 추출
+    birthdate = date_regex.search(str(note)).group(0)
+    birthdate = datetime.strptime(birthdate, '%Y-%m-%d')
+    #내원정보 추출
+    encounter_regex = re.compile("ENCOUNTER.*MEDICATIONS:")
+    encounter = encounter_regex.search(str(note)).group(0)
+    #내원일 추출
+    encounter_date = None if date_regex.search(encounter) is None else datetime.strptime(date_regex.search(encounter).group(0), '%Y-%m-%d')
+    #처방정보 추출
+    medication_regex = re.compile("MEDICATIONS:.*CONDITIONS:")
+    medication = medication_regex.search(str(note)).group(0)
+    #처방일 추출
+    medication_date = None if date_regex.search(medication) is None else datetime.strptime(date_regex.search(medication).group(0), '%Y-%m-%d')
+
+    # 내원일자, 처방일자 >= 환자의 생년월일 조건 수행
+    if encounter_date is not None and medication_date is not None :
+        if encounter_date >= birthdate and medication_date >= birthdate :
+            #중복이 발생하지 않기 위한 uuid 설정
+            table_id = uuid.uuid4()
+            person_id= uuid.uuid4()
+            #만들어둔 테이블에 insert
+            sqlString = "INSERT INTO clinical_note_extract (table_id, person_id, note) VALUES (%s, %s, %s);"
+            cur.execute(sqlString, (str(table_id), str(person_id), note))
+            connection.commit()
+            print("데이텨 insert가 되었습니다.")
