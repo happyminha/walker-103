@@ -1,57 +1,67 @@
 1.
 /*
- * ÃÑ ³»¿øÀÏ¼ö ±¸ÇÏ±â
+ * ì´ ë‚´ì›ì¼ìˆ˜ êµ¬í•˜ê¸°
  */
-SELECT SUM (visit_date) FROM (SELECT (visit_end_date - visit_start_date +1 ) --'¹æ¹®Á¾·áÀÏ-¹æ¹®½ÃÀÛÀÏ+1'À» ÃÑ ³»¿øÀÏ¼ö·Î ÁöÁ¤
+SELECT SUM (visit_date) FROM (SELECT (visit_end_date - visit_start_date +1 ) --'ë°©ë¬¸ì¢…ë£Œì¼-ë°©ë¬¸ì‹œì‘ì¼+1'ì„ ì´ ë‚´ì›ì¼ìˆ˜ë¡œ ì§€ì •
  AS visit_date FROM visit_occurrence) A;
 
 
 
 /*
- * ÃÑ ³»¿øÀÏ¼öÀÇ ÃÖ´ñ°ª°ú ÃÖ¼Ú°ª ±¸ÇÏ±â
+ * ì´ ë‚´ì›ì¼ìˆ˜ì˜ ìµœëŒ“ê°’ê³¼ ìµœì†Ÿê°’ êµ¬í•˜ê¸°
  */
-SELECT MAX(visit_date), MIN(visit_date) FROM  --ÃÑ ³»¿øÀÏ¼öÀÇ ÃÖ´ñ°ª°ú ÃÖ¼Ú°ª
+SELECT MAX(visit_date), MIN(visit_date) FROM  --ì´ ë‚´ì›ì¼ìˆ˜ì˜ ìµœëŒ“ê°’ê³¼ ìµœì†Ÿê°’
 (SELECT (visit_end_date - visit_start_date +1) AS visit_date FROM visit_occurrence) A;
 
 
 2.
 
-select distinct A.concept_name --Áßº¹ºñÇã¿ë 
+select distinct A.concept_name --ì¤‘ë³µë¹„í—ˆìš© 
 from concept A inner join condition_occurrence B 
-ON A.concept_id = B.condition_concept_id where upper(A.concept_name) ~ '^A|^B|^C|^D|^E' and A.concept_name like '%heart%'; --A~E ¹× heartÆ÷ÇÔ
+ON A.concept_id = B.condition_concept_id where upper(A.concept_name) ~ '^A|^B|^C|^D|^E' and A.concept_name like '%heart%'; --A~E ë° heartí¬í•¨
 
 3.
-SELECT *, (drug_exposure_end_date - drug_exposure_start_date) AS drug_exposure_date --Á¾·áÀÏ -½ÃÀÛÀÏÀ» º¹¿ëÀÏ·Î ÁöÁ¤
+SELECT *, (drug_exposure_end_date - drug_exposure_start_date) AS drug_exposure_date --ì¢…ë£Œì¼ -ì‹œì‘ì¼ì„ ë³µìš©ì¼ë¡œ ì§€ì •
 FROM drug_exposure
 WHERE person_id = '1891866'
-ORDER BY drug_exposure_date DESC;  --order by·Î º¹¿ëÀÏ ³»¸²Â÷¼ø Á¤·Ä
+ORDER BY drug_exposure_date DESC;  --order byë¡œ ë³µìš©ì¼ ë‚´ë¦¼ì°¨ìˆœ ì •ë ¬
 
-
-
-
-
-
-
-
-
-
-
-
-
-4.
+4. 
 with drug_list as ( 
-select distinct drug_concept_id, concept_name, count(*) as cnt from drug_exposure de 
-join concept 
-on drug_concept_id = concept_id 
-where concept_id in ( 
-40213154,19078106,19009384,40224172,19127663,1511248,40169216,1539463, 19126352,1539411,1332419,40163924,19030765,19106768,19075601) group by drug_concept_id,concept_name 
-order by count(*) desc 
+ select distinct drug_concept_id, concept_name, count(*) as cnt from drug_exposure de 
+ join concept 
+ on drug_concept_id = concept_id 
+ where concept_id in ( 
+ 40213154,19078106,19009384,40224172,19127663,1511248,40169216,1539463, 19126352,1539411,1332419,40163924,19030765,19106768,19075601) group by drug_concept_id,concept_name 
+ order by count(*) desc 
 ) 
 , drugs as (select drug_concept_id, concept_name from drug_list)
 , prescription_count as (select drug_concept_id, cnt from drug_list)
-, drug_pair_cnt1 as (select drug_concept_id1, drug_concept_id2, cnt as cnt1 from drug_pair A inner join prescription_count B on A.drug_concept_id1 = B.drug_concept_id)-- 1¹øÂ° Á¶°ÇÀÇ cnt °ª
-, drug_pair_cnt2 as (select drug_concept_id1, drug_concept_id2, cnt as cnt2 from drug_pair A inner join prescription_count B on A.drug_concept_id2 = B.drug_concept_id)-- 2¹øÂ° Á¶°ÇÀÇ cnt °ª
+, drug_pair_cnt1 as (select drug_concept_id1, drug_concept_id2, cnt as cnt1 from drug_pair A inner join prescription_count B on A.drug_concept_id1 = B.drug_concept_id) -- 1ë²ˆì§¸ ì¡°ê±´ì˜ cnt ê°’
+, drug_pair_cnt2 as (select drug_concept_id1, drug_concept_id2, cnt as cnt2 from drug_pair A inner join prescription_count B on A.drug_concept_id2 = B.drug_concept_id) -- 2ë²ˆì§¸ ì¡°ê±´ì˜ cnt ê°’
 select C.concept_name, cnt1
 from drug_pair_cnt1 A inner join drug_pair_cnt2 B on (A.drug_concept_id1 = B.drug_concept_id1 and A.drug_concept_id2 = B.drug_concept_id2 and B.cnt2 > A.cnt1)
  inner join drug_list C on A.drug_concept_id1  = C.drug_concept_id
  order by cnt1
+
+5. 
+with diabetes as (
+select * from condition_occurrence where condition_concept_id in ('3191208','36684827','3194332','3193274','43531010','4130162',
+'45766052', '45757474','4099651','4129519','4063043','4230254','4193704','4304377','201826','3194082','3192767') --ì œ 2í˜• ë‹¹ë‡¨ ì§„ë‹¨ ë°›ì€ í™˜ì ìˆ˜ (personidë¡œ countí•¨)
+),
+birth as (
+select *  from person where cast(to_char(now(), 'YYYY') as integer) -  year_of_birth >= 18       --18ì„¸ ì´ìƒì¸ í™˜ì ìˆ˜
+),
+metformin as (
+select * from drug_exposure where drug_concept_id = '40163924'
+)
+select *
+from diabetes A inner join birth B on A.person_id = B.person_id inner join metformin C on  A.person_id = C.person_id
+where drug_exposure_end_date - drug_exposure_start_date >= 90 and condition_start_date is not null; 
+
+6.
+
+
+7. 
+-- CONTINUING ë°ì´í„° ì œê±° í›„ ì‚¬ì „ ì¶”ì¶œ í…Œì´ë¸” ìƒì„±
+CREATE TABLE clinical_note_regex AS select regexp_replace(note, 'CONTINUING.*', '', 'g') from clinical_note;
